@@ -1,34 +1,57 @@
+// src/services/documentsService.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
-const getAllDocuments = async () => {
-  return prisma.document.findMany({
-    where: { isDeleted: false },
+const getAllDocuments = async (userId) => {
+  return await prisma.document.findMany({
+    where: { userId, isDeleted: false },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      filePath: true,
+      createdAt: true,
+    },
   });
 };
 
-const getDocumentById = async (id) => {
-  return prisma.document.findUnique({ where: { id } });
+const getDocumentById = async (id, userId) => {
+  return await prisma.document.findFirst({
+    where: { id, userId, isDeleted: false },
+  });
 };
 
-const createDocument = async (data) => {
-  return prisma.document.create({ data });
+// documentsService.js
+const createDocument = async (documentData) => {
+  try {
+    // ตัวอย่าง: ใช้ Prisma หรือ ORM อื่นๆ
+    const newDocument = await db.documents.create({
+      data: documentData,
+    });
+    return newDocument;
+  } catch (err) {
+    console.error('Database error in createDocument:', err);
+    throw new Error('Failed to create document in database');
+  }
 };
 
-const updateDocument = async (id, data) => {
-  return prisma.document.update({
-    where: { id },
+const updateDocument = async (id, data, userId) => {
+  return await prisma.document.update({
+    where: { id, userId },
     data,
   });
 };
 
-const deleteDocument = async (id) => {
-  // soft delete
-  return prisma.document.update({
-    where: { id },
+const deleteDocument = async (id, userId) => {
+  return await prisma.document.update({
+    where: { id, userId },
     data: { isDeleted: true },
   });
+
+  
 };
+
+
 
 module.exports = {
   getAllDocuments,

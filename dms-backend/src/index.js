@@ -33,7 +33,11 @@ const init = async () => {
       validate: {
         failAction: (request, h, err) => { throw err; }
       }
-    }
+    },
+    cors: {
+        origin: ['http://localhost:3000'], // อนุญาตให้ Frontend จาก localhost:3000 ส่งคำขอมา
+        additionalHeaders: ['Authorization'], // อนุญาต headers ที่ใช้
+      },
   });
 
   // Register Swagger-related plugins
@@ -51,6 +55,10 @@ const init = async () => {
     Vision,
     { plugin: HapiSwagger, options: swaggerOptions },
   ]);
+
+  await server.register({
+    plugin: require('@hapi/inert'), // สำหรับ multipart
+  });
 
   // Register Prisma plugin
   await server.register(prismaPlugin);

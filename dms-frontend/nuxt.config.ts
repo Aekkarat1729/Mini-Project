@@ -25,6 +25,7 @@ export default defineNuxtConfig({
    //4) ทุก route ผ่าน middleware/auth.global.ts (rename your middleware file to auth.global.ts for global middleware)
    // To apply global middleware, place your middleware file as middleware/auth.global.ts (no need to configure in nuxt.config.ts)
 
+   
   
 
   // 5) Auto-import composables ในโฟลเดอร์ composables/
@@ -38,4 +39,7 @@ export default defineNuxtConfig({
       fs: { strict: false }
     }
   }
+
+
+  
 })

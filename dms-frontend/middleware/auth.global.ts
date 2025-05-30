@@ -1,44 +1,49 @@
 // middleware/auth.global.ts
-import {jwtDecode} from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
 
-type JwtPayloadWithRole = {
-  role: string
+interface JwtPayload {
+  role: 'ADMIN' | 'USER'
   exp?: number
   [key: string]: any
 }
 
-export default defineNuxtRouteMiddleware((to) => {
-  // หน้าสาธารณะที่ไม่ต้องล็อกอิน
+export default defineNuxtRouteMiddleware((to, from) => {
   const publicPages = ['/', '/login', '/register']
+  const tokenCookie = useCookie<string | null>('token')
+  const token = tokenCookie.value
+
+  // 1. หากหน้า public → อนุญาตผ่าน
   if (publicPages.includes(to.path)) return
 
-  // อ่าน token จาก cookie
-  const token = useCookie('token').value
+  // 2. ไม่มี token → ไป login พร้อม returnUrl
   if (!token) {
-    return navigateTo('/login')
+    return navigateTo(`/login?redirect=${to.fullPath}`)
   }
 
+  // 3. decode token
+  let payload: JwtPayload
   try {
-    const payload = jwtDecode<JwtPayloadWithRole>(token)
-    const now = Math.floor(Date.now() / 1000)
-
-    // ตรวจ expiration
-    if (payload.exp && now > payload.exp) {
-      useCookie('token').value = null
-      return navigateTo('/login')
-    }
-
-    // ตรวจ role
-    if (to.path.startsWith('/admin') && payload.role !== 'ADMIN') {
-      useCookie('token').value = null
-      return navigateTo('/login')
-    }
-    if (to.path.startsWith('/user') && payload.role !== 'USER') {
-      useCookie('token').value = null
-      return navigateTo('/login')
-    }
-  } catch {
-    useCookie('token').value = null
+    payload = jwtDecode<JwtPayload>(token)
+  } catch (e) {
+    tokenCookie.value = null
     return navigateTo('/login')
   }
+
+  // 4. ตรวจ expiration
+  const now = Math.floor(Date.now() / 1000)
+  if (payload.exp && payload.exp < now) {
+    tokenCookie.value = null
+    return navigateTo('/login')
+  }
+
+  // 5. ตรวจ role ตาม route
+  if (to.path.startsWith('/admin') && payload.role !== 'ADMIN') {
+    return navigateTo('/unauthorized') // คุณควรมีหน้า /unauthorized
+  }
+
+  if (to.path.startsWith('/user') && payload.role !== 'USER') {
+    return navigateTo('/unauthorized')
+  }
+
+  // ✅ ถ้าผ่านทุกอย่าง → อนุญาต
 })
